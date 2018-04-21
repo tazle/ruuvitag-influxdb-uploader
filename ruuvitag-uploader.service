@@ -1,0 +1,13 @@
+[Unit]
+Description=RuuviTag Uploader
+After=influxdb.service
+Requires=influxdb.service
+
+[Service]
+TimeoutStartSec=0
+Restart=always
+StandardInput=file:/etc/mac-mapping.json
+ExecStart=/usr/bin/docker run -i --privileged=true --net=host influx-uploader
+
+[Install]
+WantedBy=multi-user.target

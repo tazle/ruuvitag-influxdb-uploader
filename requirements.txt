@@ -1,3 +1,4 @@
-ruuvitag_sensor
+-e git://github.com/tazle/python-bleson@allow-duplicates#egg=bleson-0.0.13
+-e git://github.com/tazle/ruuvitag-sensor/@bleson-ble-communication#egg=ruuvitag_sensor
 influxdb
--e git://github.com/tazle/hci-protocol@2713e46#egg=hci-protocol
+

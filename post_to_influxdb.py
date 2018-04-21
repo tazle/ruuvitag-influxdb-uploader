@@ -12,7 +12,7 @@ import sys
 from influxdb import InfluxDBClient
 from ruuvitag_sensor.ruuvi import RuuviTagSensor
 from ruuvitag_sensor.decoder import get_decoder
-import read_ble
+from ruuvitag_sensor.ble_communication import BleCommunicationBleson
 import argparse
 
 mappings = sys.stdin.read()
@@ -25,7 +25,10 @@ except Exception as e:
 parser = argparse.ArgumentParser(description='Send RuuviTag observations to InfluxDB.')
 parser.add_argument('--test', dest='test', action='store_const',
                     const=True, default=False,
-                    help='Test mode, print messages to stdout instead of sending to Influx')
+                    help="Test mode, don't send to Influx")
+parser.add_argument('--quiet', dest='quiet', action='store_const',
+                    const=True, default=False,
+                    help="Quiet mode, don't print messages to stdout")
 
 args = parser.parse_args()
 
@@ -55,21 +58,17 @@ client = InfluxDBClient(host="localhost", port=8086, database="tag_data")
 try:
     client.create_database('tag_data')
 except Exception as e:
-    print("Unable to create database", e)
+    print("Unable to create database", e, file=sys.stderr)
 
 while True:
-    for (mac, ble_payload, rssi) in read_ble.stream_le_advertising_data():
-        mac = mac.upper()
-        #print(mac, ble_payload, rssi, file=sys.stderr)
-        payloads = read_ble.advertising_payloads(ble_payload)
-        for type, data in payloads:
-            #print(type, data, file=sys.stderr)
-            # Manufacturer 0499 in BE == Ruuvitag, Format 3
-            if type == 255 and data[0:2] == bytes.fromhex("9904") and data[2] == 3:
-                payload = get_decoder(3).decode_data(data.hex())
-                if payload is not None:
-                    json_body = convert_to_influx(mac, payload)
-                    if args.test:
-                        print(json_body)
-                    else:
-                        client.write_points(json_body)
+    for mac, data in BleCommunicationBleson.get_datas():
+        #print(mac, data)
+        if data[0:2] == bytes.fromhex("9904") and data[2] == 3:
+            payload = get_decoder(3).decode_data(data[2:])
+            if payload is not None:
+                json_body = convert_to_influx(mac, payload)
+                if not args.quiet:
+                    print(json_body)
+                if not args.test:
+                    client.write_points([json_body])
+                    
