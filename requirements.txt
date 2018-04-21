@@ -1,2 +1,3 @@
 ruuvitag_sensor
 influxdb
+-e git://github.com/tazle/hci-protocol@2713e46#egg=hci-protocol
